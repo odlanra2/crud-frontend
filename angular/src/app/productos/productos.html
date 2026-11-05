@@ -1,0 +1,472 @@
+<div class="app-shell">
+  <header class="topbar">
+    <div class="marca">
+      <span class="marca__logo" aria-hidden="true">A</span>
+      <div>
+        <h1>Productos</h1>
+        <p>CRUD conectado a la API Symfony · Angular 21</p>
+      </div>
+    </div>
+
+    <span class="chip-api">API · /api/productos</span>
+  </header>
+
+  @if (errorConexion()) {
+    <div class="alerta alerta--error" role="alert">
+      <div class="alerta__texto">
+        <strong>Sin conexión con la API</strong>
+        <span>
+          Arranca Symfony con
+          <code>php -S 127.0.0.1:8000 -t public public/index.php</code>
+          y pulsa reintentar.
+        </span>
+      </div>
+      <button type="button" class="btn btn-ghost btn--compacto" (click)="recargar()">
+        Reintentar
+      </button>
+    </div>
+  }
+
+  <section class="stats" aria-label="Resumen del inventario">
+    <article class="panel stat">
+      <span class="stat__icono stat__icono--rojo" aria-hidden="true">
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 8 12 3 3 8l9 5 9-5Z" />
+          <path d="M3 8v8l9 5 9-5V8" />
+          <path d="M12 13v8" />
+        </svg>
+      </span>
+      <div>
+        <p>Total productos</p>
+        <strong>{{ totalTexto() }}</strong>
+      </div>
+    </article>
+
+    <article class="panel stat">
+      <span class="stat__icono stat__icono--azul" aria-hidden="true">
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="9" />
+          <path d="m8.5 12 2.5 2.5 4.5-5" />
+        </svg>
+      </span>
+      <div>
+        <p>Activos</p>
+        <strong>{{ activosTexto() }}</strong>
+      </div>
+    </article>
+
+    <article class="panel stat">
+      <span class="stat__icono stat__icono--ambar" aria-hidden="true">
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="7" width="18" height="13" rx="2" />
+          <path d="M3 11h18M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+        </svg>
+      </span>
+      <div>
+        <p>Stock total</p>
+        <strong>{{ stockTexto() }}</strong>
+      </div>
+    </article>
+
+    <article class="panel stat">
+      <span class="stat__icono stat__icono--violeta" aria-hidden="true">
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="9" />
+          <path d="M14.8 9.2c-.4-.7-1.4-1.2-2.6-1.2-1.6 0-2.7.8-2.7 2s1 1.7 2.7 2c1.9.4 2.9.9 2.9 2.2 0 1.3-1.2 2.1-2.9 2.1-1.4 0-2.5-.6-2.9-1.4" />
+          <path d="M12 6.5v11" />
+        </svg>
+      </span>
+      <div>
+        <p>Valor inventario</p>
+        <strong class="stat__valor">{{ inventarioTexto() }}</strong>
+      </div>
+    </article>
+  </section>
+
+  <section class="panel panel--tabla">
+    <div class="barra-carga" [class.barra-carga--activa]="cargando()" aria-hidden="true"></div>
+
+    <div class="toolbar">
+      <div class="buscador">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="7" />
+          <line x1="20" y1="20" x2="16.5" y2="16.5" />
+        </svg>
+        <input
+          class="input"
+          type="search"
+          [value]="q()"
+          (input)="alBuscar($event)"
+          placeholder="Buscar por nombre o descripción…"
+          aria-label="Buscar productos"
+        />
+      </div>
+
+      <select class="select" [value]="orden()" (change)="cambiarOrden($event)" aria-label="Ordenar por">
+        @for (opcion of opcionesOrden; track opcion.valor) {
+          <option [value]="opcion.valor" [selected]="opcion.valor === orden()">
+            {{ opcion.texto }}
+          </option>
+        }
+      </select>
+
+      <button
+        type="button"
+        class="btn btn-ghost btn--dir"
+        [title]="direccion() === 'ASC' ? 'Cambiar a descendente' : 'Cambiar a ascendente'"
+        (click)="alternarDireccion()"
+      >
+        {{ direccion() === 'ASC' ? '↑ ASC' : '↓ DESC' }}
+      </button>
+
+      <select
+        class="select"
+        [value]="porPagina()"
+        (change)="cambiarPorPagina($event)"
+        aria-label="Productos por página"
+      >
+        @for (tamano of tamanosPagina; track tamano) {
+          <option [value]="tamano" [selected]="tamano === porPagina()">{{ tamano }} / pág.</option>
+        }
+      </select>
+
+      <button type="button" class="btn btn-primary" (click)="abrirNuevo()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true">
+          <line x1="12" y1="5" x2="12" y2="19" />
+          <line x1="5" y1="12" x2="19" y2="12" />
+        </svg>
+        Nuevo producto
+      </button>
+    </div>
+
+    <div class="tabla-envoltura">
+      <table class="tabla" [class.tabla--recargando]="cargando() && productos().length > 0">
+        <thead>
+          <tr>
+            <th>Producto</th>
+            <th>Precio</th>
+            <th>Stock</th>
+            <th>Estado</th>
+            <th>Inventario</th>
+            <th>Actualizado</th>
+            <th class="acciones-col">Acciones</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          @if (cargando() && !productos().length) {
+            @for (fila of esqueletos; track fila) {
+              <tr class="fila-esqueleto">
+                <td>
+                  <span class="esqueleto" style="width: 70%"></span>
+                  <span class="esqueleto esqueleto--corto"></span>
+                </td>
+                <td><span class="esqueleto" style="width: 70%"></span></td>
+                <td><span class="esqueleto" style="width: 40%"></span></td>
+                <td><span class="esqueleto" style="width: 60%"></span></td>
+                <td><span class="esqueleto" style="width: 70%"></span></td>
+                <td><span class="esqueleto" style="width: 60%"></span></td>
+                <td><span class="esqueleto" style="width: 50%"></span></td>
+              </tr>
+            }
+          } @else if (!productos().length) {
+            <tr>
+              <td colspan="7" class="vacio">
+                <strong>No hay productos para mostrar</strong>
+                <span>Prueba con otra búsqueda o crea tu primer producto.</span>
+              </td>
+            </tr>
+          } @else {
+            @for (producto of productos(); track producto.id) {
+              <tr>
+                <td>
+                  <div class="producto-celda">
+                    <strong>{{ producto.nombre }}</strong>
+                    <span [title]="producto.descripcion ?? ''">
+                      {{ producto.descripcion || 'Sin descripción' }}
+                    </span>
+                  </div>
+                </td>
+                <td class="numero precio">{{ formatearMoneda(producto.precio) }}</td>
+                <td>
+                  @if (producto.stock === 0) {
+                    <span class="badge badge--peligro">Sin stock</span>
+                  } @else if (producto.stockBajo) {
+                    <span class="badge badge--aviso">
+                      Bajo · {{ formatearNumero(producto.stock) }}
+                    </span>
+                  } @else {
+                    <span class="numero">{{ formatearNumero(producto.stock) }}</span>
+                  }
+                </td>
+                <td>
+                  <span class="badge" [class.badge--ok]="producto.activo" [class.badge--apagado]="!producto.activo">
+                    {{ producto.activo ? 'Activo' : 'Inactivo' }}
+                  </span>
+                </td>
+                <td class="numero">{{ formatearMoneda(producto.valorInventario) }}</td>
+                <td class="fecha">{{ formatearFecha(producto.actualizadoEn) }}</td>
+                <td>
+                  <div class="acciones">
+                    <button
+                      type="button"
+                      class="accion"
+                      [title]="'Editar ' + producto.nombre"
+                      [attr.aria-label]="'Editar ' + producto.nombre"
+                      (click)="abrirEditar(producto)"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 20h9" />
+                        <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                      </svg>
+                    </button>
+
+                    <button
+                      type="button"
+                      class="accion accion--peligro"
+                      [title]="'Eliminar ' + producto.nombre"
+                      [attr.aria-label]="'Eliminar ' + producto.nombre"
+                      (click)="pedirEliminar(producto)"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 6h18" />
+                        <path d="M8 6V4h8v2" />
+                        <path d="M19 6l-1 14H6L5 6" />
+                        <path d="M10 11v5M14 11v5" />
+                      </svg>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+
+    @if (meta(); as m) {
+      @if (m.total > 0) {
+        <footer class="paginacion">
+          <p class="paginacion__info">
+            Mostrando <strong>{{ desde() }}–{{ hasta() }}</strong> de
+            <strong>{{ m.total }}</strong> productos
+          </p>
+
+          <div class="paginacion__controles">
+            <button
+              type="button"
+              class="btn btn-ghost btn--compacto"
+              [disabled]="pagina() <= 1 || cargando()"
+              (click)="irAPagina(pagina() - 1)"
+            >
+              ← Anterior
+            </button>
+
+            @for (numero of paginasVisibles(); track numero) {
+              <button
+                type="button"
+                class="pagina"
+                [class.pagina--activa]="numero === pagina()"
+                [attr.aria-current]="numero === pagina() ? 'page' : null"
+                (click)="irAPagina(numero)"
+              >
+                {{ numero }}
+              </button>
+            }
+
+            <button
+              type="button"
+              class="btn btn-ghost btn--compacto"
+              [disabled]="pagina() >= totalPaginas() || cargando()"
+              (click)="irAPagina(pagina() + 1)"
+            >
+              Siguiente →
+            </button>
+          </div>
+        </footer>
+      }
+    }
+  </section>
+
+  <p class="pie">Symfony 6.4 · PostgreSQL 16 · API REST en JSON</p>
+</div>
+
+@if (modalAbierto()) {
+  <div class="overlay" (click)="cerrarModal()">
+    <section
+      class="modal"
+      role="dialog"
+      aria-modal="true"
+      [attr.aria-label]="productoEditando() ? 'Editar producto' : 'Nuevo producto'"
+      (click)="$event.stopPropagation()"
+    >
+      <header class="modal__cabecera">
+        <div>
+          <h2 class="modal__titulo">
+            {{ productoEditando() ? 'Editar producto' : 'Nuevo producto' }}
+          </h2>
+          <p class="modal__subtitulo">
+            {{
+              productoEditando()
+                ? 'Modifica los datos y guarda los cambios.'
+                : 'Completa los datos del nuevo producto.'
+            }}
+          </p>
+        </div>
+        <button type="button" class="modal__cerrar" aria-label="Cerrar" (click)="cerrarModal()">
+          ×
+        </button>
+      </header>
+
+      <form class="modal__cuerpo formulario" [formGroup]="form" (ngSubmit)="guardar()" novalidate>
+        <div class="campo">
+          <label for="producto-nombre">Nombre *</label>
+          <input
+            id="producto-nombre"
+            class="input"
+            [class.input--error]="mensajeError('nombre') !== null"
+            type="text"
+            maxlength="150"
+            formControlName="nombre"
+            placeholder="Ej. Teclado mecánico RGB"
+            autocomplete="off"
+          />
+          @if (mensajeError('nombre'); as error) {
+            <p class="campo__error">{{ error }}</p>
+          }
+        </div>
+
+        <div class="campo">
+          <label for="producto-descripcion">Descripción</label>
+          <textarea
+            id="producto-descripcion"
+            class="input"
+            [class.input--error]="mensajeError('descripcion') !== null"
+            rows="3"
+            maxlength="2000"
+            formControlName="descripcion"
+            placeholder="Características, color, garantía…"
+          ></textarea>
+          <div class="campo__fila">
+            @if (mensajeError('descripcion'); as error) {
+              <p class="campo__error">{{ error }}</p>
+            }
+            <span class="campo__pista">{{ longitudDescripcion() }}/2000</span>
+          </div>
+        </div>
+
+        <div class="fila-doble">
+          <div class="campo">
+            <label for="producto-precio">Precio *</label>
+            <input
+              id="producto-precio"
+              class="input"
+              [class.input--error]="mensajeError('precio') !== null"
+              type="number"
+              min="0.01"
+              step="0.01"
+              formControlName="precio"
+              placeholder="0.00"
+            />
+            @if (mensajeError('precio'); as error) {
+              <p class="campo__error">{{ error }}</p>
+            }
+          </div>
+
+          <div class="campo">
+            <label for="producto-stock">Stock *</label>
+            <input
+              id="producto-stock"
+              class="input"
+              [class.input--error]="mensajeError('stock') !== null"
+              type="number"
+              min="0"
+              step="1"
+              formControlName="stock"
+              placeholder="0"
+            />
+            @if (mensajeError('stock'); as error) {
+              <p class="campo__error">{{ error }}</p>
+            }
+          </div>
+        </div>
+
+        <div class="campo">
+          <label>Estado</label>
+          <label class="switch">
+            <input type="checkbox" formControlName="activo" />
+            <span class="switch__pista"><span class="switch__bolita"></span></span>
+            <span class="switch__texto">
+              {{ form.controls.activo.value ? 'Activo (visible para la venta)' : 'Inactivo' }}
+            </span>
+          </label>
+        </div>
+
+        <footer class="modal__pie">
+          <button type="button" class="btn btn-ghost" [disabled]="guardando()" (click)="cerrarModal()">
+            Cancelar
+          </button>
+          <button type="submit" class="btn btn-primary" [disabled]="guardando()">
+            {{
+              guardando()
+                ? 'Guardando…'
+                : productoEditando()
+                  ? 'Guardar cambios'
+                  : 'Crear producto'
+            }}
+          </button>
+        </footer>
+      </form>
+    </section>
+  </div>
+}
+
+@if (productoAEliminar(); as producto) {
+  <div class="overlay" (click)="cancelarEliminar()">
+    <section
+      class="modal modal--confirmar"
+      role="alertdialog"
+      aria-modal="true"
+      aria-label="Eliminar producto"
+      (click)="$event.stopPropagation()"
+    >
+      <header class="modal__cabecera">
+        <div>
+          <h2 class="modal__titulo">Eliminar producto</h2>
+          <p class="modal__subtitulo">
+            Se eliminará "{{ producto.nombre }}". Esta acción no se puede deshacer.
+          </p>
+        </div>
+        <button type="button" class="modal__cerrar" aria-label="Cerrar" (click)="cancelarEliminar()">
+          ×
+        </button>
+      </header>
+
+      <footer class="modal__pie">
+        <button type="button" class="btn btn-ghost" [disabled]="eliminando()" (click)="cancelarEliminar()">
+          Cancelar
+        </button>
+        <button type="button" class="btn btn-peligro" [disabled]="eliminando()" (click)="confirmarEliminacion()">
+          {{ eliminando() ? 'Eliminando…' : 'Sí, eliminar' }}
+        </button>
+      </footer>
+    </section>
+  </div>
+}
+
+<div class="toasts" aria-live="polite" aria-atomic="false">
+  @for (toast of toasts(); track toast.id) {
+    <div
+      class="toast"
+      [class.toast--ok]="toast.tipo === 'ok'"
+      [class.toast--error]="toast.tipo === 'error'"
+      role="status"
+    >
+      <span aria-hidden="true">{{ toast.tipo === 'ok' ? '✓' : '!' }}</span>
+      <div>
+        <strong>{{ toast.tipo === 'ok' ? 'Listo' : 'Error' }}</strong>
+        <p>{{ toast.texto }}</p>
+      </div>
+    </div>
+  }
+</div>

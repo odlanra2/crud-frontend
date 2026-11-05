@@ -1,0 +1,11 @@
+# --- SYMFONY (mi_crud) ---
+/mi_crud/var/
+/mi_crud/vendor/
+
+# --- ANGULAR (mi-tienda-frontend) ---
+/angular/node_modules/
+/angular/.angular/
+/angular/dist/
+/angular/.editorconfig
+
+/vue/node_modules/

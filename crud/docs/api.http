@@ -1,0 +1,51 @@
+@baseUrl = http://127.0.0.1:8000/api
+
+### Índice de la API
+GET http://127.0.0.1:8000/
+
+### Listar productos (paginado)
+GET {{baseUrl}}/productos?pagina=1&porPagina=5&orden=nombre&direccion=ASC
+
+### Buscar productos
+GET {{baseUrl}}/productos?q=teclado
+
+### Estadísticas para el dashboard
+GET {{baseUrl}}/productos/estadisticas
+
+### Detalle
+GET {{baseUrl}}/productos/1
+
+### Crear
+POST {{baseUrl}}/productos
+Content-Type: application/json
+
+{
+  "nombre": "Monitor 24\" Full HD",
+  "descripcion": "Monitor IPS de 24 pulgadas, 75 Hz y HDMI.",
+  "precio": 699900,
+  "stock": 8,
+  "activo": true
+}
+
+### Actualizar (reemplazo completo)
+PUT {{baseUrl}}/productos/1
+Content-Type: application/json
+
+{
+  "nombre": "Monitor 24\" Full HD",
+  "descripcion": "Monitor IPS actualizado.",
+  "precio": 649900,
+  "stock": 5,
+  "activo": true
+}
+
+### Eliminar
+DELETE {{baseUrl}}/productos/1
+
+### Ejemplo de error 422
+POST {{baseUrl}}/productos
+Content-Type: application/json
+
+{
+  "precio": 0
+}

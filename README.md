@@ -25,6 +25,7 @@ Ambos implementan la misma funcionalidad:
    ```powershell
    docker compose up -d
    php bin/console doctrine:migrations:migrate --no-interaction
+   php -S 127.0.0.1:9000 -t public/ 
    php -S 127.0.0.1:8000 -t public public/index.php
    ```
 

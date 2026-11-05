@@ -2,6 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
+import { API_URL } from './api';
 import {
   Estadisticas,
   FiltrosProductos,
@@ -10,11 +11,7 @@ import {
   ProductoPayload,
 } from './producto.model';
 
-/**
- * URL base de la API Symfony.
- * Si despliegas el backend en otro host, cambia solo esta constante.
- */
-const API_URL = 'http://127.0.0.1:8000/api/productos';
+const PRODUCTOS_URL = `${API_URL}/productos`;
 
 @Injectable({ providedIn: 'root' })
 export class ProductoService {
@@ -29,26 +26,26 @@ export class ProductoService {
       }
     }
 
-    return this.http.get<ListaProductos>(API_URL, { params });
+    return this.http.get<ListaProductos>(PRODUCTOS_URL, { params });
   }
 
   obtener(id: number): Observable<Producto> {
-    return this.http.get<Producto>(`${API_URL}/${id}`);
+    return this.http.get<Producto>(`${PRODUCTOS_URL}/${id}`);
   }
 
   crear(payload: ProductoPayload): Observable<Producto> {
-    return this.http.post<Producto>(API_URL, payload);
+    return this.http.post<Producto>(PRODUCTOS_URL, payload);
   }
 
   actualizar(id: number, payload: ProductoPayload): Observable<Producto> {
-    return this.http.put<Producto>(`${API_URL}/${id}`, payload);
+    return this.http.put<Producto>(`${PRODUCTOS_URL}/${id}`, payload);
   }
 
   eliminar(id: number): Observable<void> {
-    return this.http.delete<void>(`${API_URL}/${id}`);
+    return this.http.delete<void>(`${PRODUCTOS_URL}/${id}`);
   }
 
   estadisticas(): Observable<Estadisticas> {
-    return this.http.get<Estadisticas>(`${API_URL}/estadisticas`);
+    return this.http.get<Estadisticas>(`${PRODUCTOS_URL}/estadisticas`);
   }
 }

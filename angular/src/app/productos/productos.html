@@ -8,7 +8,20 @@
       </div>
     </div>
 
-    <span class="chip-api">API · /api/productos</span>
+    <div class="sesion">
+      <span class="chip-api">API · /api/productos</span>
+
+      <div class="usuario">
+        <span class="usuario__avatar" aria-hidden="true">{{ inicial() }}</span>
+        <div class="usuario__datos">
+          <strong>{{ nombreVisible() }}</strong>
+          <span>{{ usuario()?.email }}</span>
+        </div>
+        <button type="button" class="btn btn-ghost btn--compacto" (click)="salir()">
+          Salir
+        </button>
+      </div>
+    </div>
   </header>
 
   @if (errorConexion()) {

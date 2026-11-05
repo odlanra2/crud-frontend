@@ -11,8 +11,10 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Router } from '@angular/router';
 import { Subject, debounceTime, distinctUntilChanged, finalize } from 'rxjs';
 
+import { AuthService } from '../core/auth.service';
 import { erroresDeCampo, mensajeDeError } from '../core/errores';
 import { Estadisticas, ListaMeta, Producto, ProductoPayload } from '../core/producto.model';
 import { ProductoService } from '../core/producto.service';
@@ -34,9 +36,15 @@ type CampoFormulario = 'nombre' | 'descripcion' | 'precio' | 'stock' | 'activo';
 })
 export class Productos implements OnInit {
   private readonly api = inject(ProductoService);
+  private readonly auth = inject(AuthService);
+  private readonly router = inject(Router);
   private readonly fb = inject(FormBuilder);
   private readonly destroyRef = inject(DestroyRef);
   private readonly busqueda$ = new Subject<string>();
+
+  protected readonly usuario = this.auth.usuario;
+  protected readonly nombreVisible = this.auth.nombreVisible;
+  protected readonly inicial = this.auth.inicial;
 
   protected readonly productos = signal<Producto[]>([]);
   protected readonly meta = signal<ListaMeta | null>(null);
@@ -185,6 +193,11 @@ export class Productos implements OnInit {
   protected recargar(): void {
     this.cargar();
     this.cargarEstadisticas();
+  }
+
+  protected salir(): void {
+    this.auth.cerrarSesion();
+    void this.router.navigate(['/login']);
   }
 
   protected alBuscar(evento: Event): void {

@@ -1,10 +1,14 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { erroresDeCampo, mensajeDeError, productoApi } from './api/productoApi'
+import AuthView from './components/AuthView.vue'
 import ConfirmModal from './components/ConfirmModal.vue'
 import EstadisticasCards from './components/EstadisticasCards.vue'
 import ProductoFormModal from './components/ProductoFormModal.vue'
 import ProductoTable from './components/ProductoTable.vue'
+import { useAuthStore } from './stores/auth'
+
+const auth = useAuthStore()
 
 const opcionesOrden = [
   { valor: 'creadoEn', texto: 'Más recientes' },
@@ -217,23 +221,75 @@ function notificar(tipo, texto) {
   }, 4500)
 }
 
-onMounted(recargar)
-onBeforeUnmount(() => clearTimeout(temporizadorBusqueda))
+function limpiarProductos() {
+  productos.value = []
+  estadisticas.value = null
+  meta.value = { total: 0, pagina: 1, porPagina: filtros.porPagina, totalPaginas: 0 }
+}
+
+function salir() {
+  auth.cerrarSesion()
+  limpiarProductos()
+}
+
+function alExpirarSesion() {
+  if (!auth.autenticado) return
+
+  auth.cerrarSesion('Tu sesión expiró. Inicia sesión de nuevo.')
+}
+
+watch(
+  () => auth.autenticado,
+  (autenticado, anterior) => {
+    if (autenticado && !anterior) recargar()
+    if (!autenticado) limpiarProductos()
+  },
+)
+
+onMounted(async () => {
+  window.addEventListener('auth:expirada', alExpirarSesion)
+
+  if (auth.autenticado) {
+    await auth.restaurarSesion()
+    if (auth.autenticado) recargar()
+  }
+})
+
+onBeforeUnmount(() => {
+  clearTimeout(temporizadorBusqueda)
+  window.removeEventListener('auth:expirada', alExpirarSesion)
+})
 </script>
 
 <template>
-  <div class="app-shell">
-    <header class="topbar">
-      <div class="marca">
-        <span class="marca__logo" aria-hidden="true">V</span>
-        <div>
-          <h1>Productos</h1>
-          <p>CRUD conectado a la API Symfony · Vue 3 + Vite</p>
-        </div>
-      </div>
+  <AuthView v-if="!auth.autenticado" />
 
-      <span class="chip-api">API · /api/productos</span>
-    </header>
+  <template v-else>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="marca">
+          <span class="marca__logo" aria-hidden="true">V</span>
+          <div>
+            <h1>Productos</h1>
+            <p>CRUD conectado a la API Symfony · Vue 3 + Vite</p>
+          </div>
+        </div>
+
+        <div class="sesion">
+          <span class="chip-api">API · /api/productos</span>
+
+          <div class="usuario">
+            <span class="usuario__avatar" aria-hidden="true">{{ auth.inicial }}</span>
+            <div class="usuario__datos">
+              <strong>{{ auth.nombreVisible }}</strong>
+              <span>{{ auth.usuario?.email }}</span>
+            </div>
+            <button type="button" class="btn btn-ghost btn--compacto" @click="salir">
+              Salir
+            </button>
+          </div>
+        </div>
+      </header>
 
     <div v-if="errorConexion" class="alerta alerta--error" role="alert">
       <div class="alerta__texto">
@@ -366,21 +422,22 @@ onBeforeUnmount(() => clearTimeout(temporizadorBusqueda))
     @confirmar="confirmarEliminacion"
   />
 
-  <div class="toasts" aria-live="polite" aria-atomic="false">
-    <div
-      v-for="toast in toasts"
-      :key="toast.id"
-      class="toast"
-      :class="toast.tipo === 'ok' ? 'toast--ok' : 'toast--error'"
-      role="status"
-    >
-      <span aria-hidden="true">{{ toast.tipo === 'ok' ? '✓' : '!' }}</span>
-      <div>
-        <strong>{{ toast.tipo === 'ok' ? 'Listo' : 'Error' }}</strong>
-        <p>{{ toast.texto }}</p>
+      <div class="toasts" aria-live="polite" aria-atomic="false">
+        <div
+          v-for="toast in toasts"
+          :key="toast.id"
+          class="toast"
+          :class="toast.tipo === 'ok' ? 'toast--ok' : 'toast--error'"
+          role="status"
+        >
+          <span aria-hidden="true">{{ toast.tipo === 'ok' ? '✓' : '!' }}</span>
+          <div>
+            <strong>{{ toast.tipo === 'ok' ? 'Listo' : 'Error' }}</strong>
+            <p>{{ toast.texto }}</p>
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
+    </template>
 </template>
 
 <style scoped>
@@ -451,6 +508,60 @@ onBeforeUnmount(() => clearTimeout(temporizadorBusqueda))
   border-radius: 50%;
   background: var(--acento);
   box-shadow: 0 0 0 3px var(--acento-suave);
+}
+
+.sesion {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.usuario {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #fff;
+  border: 1px solid var(--borde);
+  border-radius: 999px;
+  padding: 5px 6px 5px 5px;
+  box-shadow: var(--sombra);
+}
+
+.usuario__avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--acento-suave);
+  color: var(--acento-oscuro);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.usuario__datos {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+  min-width: 0;
+}
+
+.usuario__datos strong {
+  font-size: 13px;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.usuario__datos span {
+  font-size: 11.5px;
+  color: var(--texto-suave);
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .alerta {
@@ -629,6 +740,11 @@ onBeforeUnmount(() => clearTimeout(temporizadorBusqueda))
 
   .marca h1 {
     font-size: 22px;
+  }
+
+  .sesion {
+    width: 100%;
+    justify-content: space-between;
   }
 
   .toolbar .select {

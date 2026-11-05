@@ -1,17 +1,11 @@
-import axios from 'axios'
+import http from './http'
+
+export { erroresDeCampo, mensajeDeError } from './errores'
 
 /**
- * Cliente HTTP de la API de productos (Symfony + PostgreSQL).
- * La URL se puede cambiar con VITE_API_URL en un archivo .env.
+ * Cliente de la API de productos (Symfony + PostgreSQL).
+ * Usa la instancia compartida de http.js, que adjunta el JWT automáticamente.
  */
-const http = axios.create({
-  baseURL: import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:8000/api',
-  headers: {
-    Accept: 'application/json',
-  },
-  timeout: 12000,
-})
-
 export const productoApi = {
   /**
    * @param {{ q?: string, orden?: string, direccion?: 'ASC'|'DESC', pagina?: number, porPagina?: number }} filtros
@@ -65,27 +59,3 @@ export const productoApi = {
   },
 }
 
-/** Errores por campo que devuelve la API en un 422. */
-export function erroresDeCampo(error) {
-  const cuerpo = error?.response?.data
-
-  return cuerpo && typeof cuerpo.errors === 'object' && cuerpo.errors !== null ? cuerpo.errors : {}
-}
-
-/** Texto legible para mostrar el error al usuario. */
-export function mensajeDeError(error) {
-  const cuerpo = error?.response?.data
-
-  if (cuerpo?.errors && typeof cuerpo.errors === 'object') {
-    const mensajes = Object.values(cuerpo.errors).flat()
-    if (mensajes.length > 0) return mensajes.join(' ')
-  }
-
-  if (cuerpo?.message) return cuerpo.message
-
-  if (!error?.response) {
-    return 'No se pudo conectar con la API. Comprueba que Symfony esté corriendo en http://127.0.0.1:8000.'
-  }
-
-  return 'Ocurrió un error inesperado.'
-}

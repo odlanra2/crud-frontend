@@ -7,27 +7,14 @@ namespace App\Tests\Controller;
 use App\Entity\Producto;
 use App\Repository\ProductoRepository;
 use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\ORM\Tools\SchemaTool;
-use Symfony\Bundle\FrameworkBundle\KernelBrowser;
-use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
-class ProductoApiTest extends WebTestCase
+class ProductoApiTest extends ApiTestCase
 {
-    private KernelBrowser $client;
-
     protected function setUp(): void
     {
-        $this->client = static::createClient();
+        parent::setUp();
 
-        $em = static::getContainer()->get(EntityManagerInterface::class);
-        $schemaManager = $em->getConnection()->createSchemaManager();
-
-        if (!$schemaManager->tablesExist(['producto'])) {
-            $schemaTool = new SchemaTool($em);
-            $schemaTool->createSchema($em->getMetadataFactory()->getAllMetadata());
-        } else {
-            $em->getConnection()->executeStatement('DELETE FROM producto');
-        }
+        $this->autenticarComo($this->crearUsuario());
     }
 
     public function testListadoVacio(): void
@@ -232,17 +219,5 @@ class ProductoApiTest extends WebTestCase
         $em->flush();
 
         return $producto;
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function json(): array
-    {
-        $response = $this->client->getResponse();
-
-        self::assertStringStartsWith('application/json', (string) $response->headers->get('Content-Type'));
-
-        return json_decode((string) $response->getContent(), true, 512, JSON_THROW_ON_ERROR);
     }
 }

@@ -3,3 +3,7 @@ controllers:
         path: ../src/Controller/
         namespace: App\Controller
     type: attribute
+
+# La ruta solo debe existir: el firewall "login" la intercepta antes del controlador.
+api_login_check:
+    path: /api/login_check
